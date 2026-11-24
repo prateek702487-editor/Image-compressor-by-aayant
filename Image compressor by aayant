@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Image Compressor by Aayant - Compress images to a target KB size, adjust quality, resize width, and download as individual files or ZIP." />
+  <title>Image Compressor by Aayant</title>
+  <!-- Load Tailwind CSS for responsive layout and dark theme utility classes -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Load JSZip for bundling compressed images into a batch ZIP archive -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- Load Inter font family -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #090d16;
+      color: #f8fafc;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .glass {
+      background: rgba(17, 24, 39, 0.82);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      backdrop-filter: blur(12px);
+    }
+    input[type="range"] {
+      accent-color: #3b82f6;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- Sticky Navigation Header -->
+  <header class="border-b border-slate-800/90 bg-slate-950/85 sticky top-0 z-20 backdrop-blur-md">
+    <div class="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between gap-3">
+      <!-- Custom SVG Logo + Brand Title -->
+      <a href="#" class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-cyan-400 to-emerald-400 p-[1.5px] shadow-lg shadow-blue-600/20 shrink-0">
+          <div class="w-full h-full rounded-[10.5px] bg-slate-950 flex items-center justify-center">
+            <!-- Custom SVG Image Icon -->
+            <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="3" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+          </div>
+        </div>
+        <div class="min-w-0">
+          <span class="text-lg sm:text-xl font-extrabold tracking-tight text-white truncate block">
+            Image Compressor <span class="text-cyan-400">by Aayant</span>
+          </span>
+          <p class="text-[11px] text-slate-400 leading-tight truncate">Target KB, Quality & Batch ZIP Tool</p>
+        </div>
+      </a>
+
+      <!-- Privacy Pill -->
+      <span class="hidden sm:inline-flex text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-medium shrink-0">
+        100% Browser-Based
+      </span>
+    </div>
+  </header>
+
+  <!-- Main Tool Container -->
+  <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-8">
+
+    <!-- Hero Title & Intro -->
+    <section class="text-center mb-8">
+      <p class="text-xs uppercase tracking-wider text-cyan-400 font-semibold mb-2">
+        Image Compressor by Aayant
+      </p>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2.5 text-white">
+        Compress Images to <span class="text-cyan-400">Exact KB</span> Fast
+      </h1>
+      <p class="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+        Choose a target KB limit for forms and uploads or tune quality, format, and max width — processed locally without uploading your photos to a server.
+      </p>
+    </section>
+
+    <!-- Upload Card -->
+    <section
+      id="dropZone"
+      class="glass rounded-2xl p-6 sm:p-8 text-center border-2 border-dashed border-slate-700/90 hover:border-cyan-500/70 transition-colors mb-6"
+    >
+      <input type="file" id="fileInput" accept="image/*" multiple class="hidden" />
+      <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+      </div>
+      <p class="text-base font-semibold text-white mb-1">Select Images to Compress</p>
+      <p class="text-xs text-slate-400 mb-5">JPG, PNG, WebP • Batch processing & ZIP download supported</p>
+
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          id="pickBtn"
+          class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-[0.99] transition text-sm font-semibold text-white shadow-lg shadow-blue-600/25 cursor-pointer"
+        >
+          Choose Images
+        </button>
+        <button
+          type="button"
+          id="demoBtn"
+          class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-[0.99] transition text-xs font-medium text-slate-200 border border-slate-700 cursor-pointer"
+        >
+          Try Sample Photo
+        </button>
+      </div>
+
+      <!-- Status / Error Message Area -->
+      <p id="statusMsg" role="status" class="text-xs text-amber-300 mt-3 min-h-[18px]"></p>
+    </section>
+
+    <!-- Compression Controls Panel -->
+    <section id="controlsPanel" class="hidden glass rounded-2xl p-5 sm:p-6 mb-6 space-y-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+
+        <!-- Target Size (KB) Input -->
+        <div>
+          <label for="targetKbInput" class="block text-xs font-medium text-slate-300 mb-1.5">
+            Target Size (KB) <span class="text-slate-500">(Optional)</span>
+          </label>
+          <input
+            type="number"
+            id="targetKbInput"
+            min="5"
+            max="25000"
+            placeholder="e.g. 150"
+            class="w-full bg-slate-950/80 border border-slate-700 focus:border-cyan-500 focus:outline-none rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500"
+          />
+        </div>
+
+        <!-- Quality Slider -->
+        <div>
+          <div class="flex justify-between text-xs mb-1.5">
+            <label for="qualitySlider" class="font-medium text-slate-300">Quality (if no KB)</label>
+            <span id="qualityVal" class="font-bold text-cyan-400">75%</span>
+          </div>
+          <div class="py-2">
+            <input
+              type="range"
+              id="qualitySlider"
+              min="10"
+              max="100"
+              value="75"
+              class="w-full cursor-pointer"
+            />
+          </div>
+        </div>
+
+        <!-- Output Format Switcher -->
+        <div>
+          <label for="formatSelect" class="block text-xs font-medium text-slate-300 mb-1.5">Output Format</label>
+          <select
+            id="formatSelect"
+            class="w-full bg-slate-950/80 border border-slate-700 focus:border-cyan-500 focus:outline-none rounded-xl px-3.5 py-2.5 text-sm text-slate-100"
+          >
+            <option value="image/jpeg">JPG (Best Compatibility)</option>
+            <option value="image/webp">WebP (Smaller Size)</option>
+          </select>
+        </div>
+
+        <!-- Max Width Resize Selector -->
+        <div>
+          <label for="resizeSelect" class="block text-xs font-medium text-slate-300 mb-1.5">Max Width (px)</label>
+          <select
+            id="resizeSelect"
+            class="w-full bg-slate-950/80 border border-slate-700 focus:border-cyan-500 focus:outline-none rounded-xl px-3.5 py-2.5 text-sm text-slate-100"
+          >
+            <option value="0">Original Size</option>
+            <option value="1920">1920px (Full HD)</option>
+            <option value="1280">1280px (HD)</option>
+            <option value="800">800px (Web / Form)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Quick Target KB Presets -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs text-slate-400 mr-1">Quick KB Targets:</span>
+        <button type="button" data-kb="50" class="preset-btn px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-blue-600/25 border border-slate-700 hover:border-cyan-500/40 text-xs text-slate-200 transition cursor-pointer">50 KB</button>
+        <button type="button" data-kb="100" class="preset-btn px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-blue-600/25 border border-slate-700 hover:border-cyan-500/40 text-xs text-slate-200 transition cursor-pointer">100 KB</button>
+        <button type="button" data-kb="200" class="preset-btn px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-blue-600/25 border border-slate-700 hover:border-cyan-500/40 text-xs text-slate-200 transition cursor-pointer">200 KB</button>
+        <button type="button" data-kb="" class="preset-btn px-3 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700 border border-slate-700 text-xs text-slate-400 transition cursor-pointer">Clear KB</button>
+      </div>
+
+      <p class="text-xs text-slate-400 leading-relaxed">
+        When <span class="text-slate-200 font-medium">Target Size (KB)</span> is set, binary search adjusts encoding quality and gently scales dimensions if needed to fit under your target. Leave Target KB blank to use the Quality slider.
+      </p>
+
+      <!-- Summary & Batch ZIP Actions -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
+        <span id="summaryText" class="text-xs font-medium text-slate-400">0 images ready</span>
+        <div class="flex items-center gap-2.5">
+          <button
+            type="button"
+            id="clearBtn"
+            class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition cursor-pointer"
+          >
+            Clear All
+          </button>
+          <button
+            type="button"
+            id="downloadAllBtn"
+            class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition shadow-md shadow-blue-600/20 cursor-pointer"
+          >
+            Download All (ZIP)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Processed Image Cards Container -->
+    <section id="imageList" class="space-y-3"></section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/90 py-6 px-4 text-center text-xs text-slate-500">
+    © 2026 Image Compressor by Aayant. All rights reserved.
+  </footer>
+
+  <script>
+    // DOM Element References
+    const pickBtn = document.getElementById('pickBtn');
+    const demoBtn = document.getElementById('demoBtn');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const targetKbInput = document.getElementById('targetKbInput');
+    const statusMsg = document.getElementById('statusMsg');
+    const controlsPanel = document.getElementById('controlsPanel');
+    const qualitySlider = document.getElementById('qualitySlider');
+    const qualityVal = document.getElementById('qualityVal');
+    const formatSelect = document.getElementById('formatSelect');
+    const resizeSelect = document.getElementById('resizeSelect');
+    const imageList = document.getElementById('imageList');
+    const summaryText = document.getElementById('summaryText');
+    const clearBtn = document.getElementById('clearBtn');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const presetBtns = document.querySelectorAll('.preset-btn');
+
+    // State array holding processed files
+    let filesData = [];
+    let isReprocessing = false;
+
+    /**
+     * Formats byte size into B, KB, or MB.
+     */
+    const formatBytes = (bytes) => {
+      if (!bytes || bytes <= 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB'];
+      const i = Math.min(sizes.length - 1, Math.floor(Math.log(bytes) / Math.log(k)));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    };
+
+    /**
+     * Releases object URLs before replacing or clearing processed items.
+     */
+    function revokeExistingUrls() {
+      filesData.forEach((item) => {
+        if (item.compressedUrl) {
+          try {
+            URL.revokeObjectURL(item.compressedUrl);
+          } catch (_) {
+            // Ignore already revoked URL
+          }
+        }
+      });
+    }
+
+    // Trigger native file picker
+    pickBtn.addEventListener('click', () => {
+      statusMsg.textContent = '';
+      fileInput.click();
+    });
+
+    // Generate a sample image locally so users can test Target KB inside preview sandboxes
+    demoBtn.addEventListener('click', async () => {
+      try {
+        statusMsg.textContent = 'Generating sample image...';
+        const sampleCanvas = document.createElement('canvas');
+        sampleCanvas.width = 1600;
+        sampleCanvas.height = 1000;
+        const ctx = sampleCanvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas 2D context unavailable');
+
+        const bgGrad = ctx.createLinearGradient(0, 0, 1600, 1000);
+        bgGrad.addColorStop(0, '#0284c7');
+        bgGrad.addColorStop(0.55, '#1d4ed8');
+        bgGrad.addColorStop(1, '#090d16');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, 1600, 1000);
+
+        for (let i = 0; i < 45; i++) {
+          ctx.beginPath();
+          ctx.arc((i * 211) % 1600, (i * 277) % 1000, 30 + (i % 80), 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(34, 211, 238, ${0.07 + (i % 4) * 0.03})`;
+          ctx.fill();
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 58px sans-serif';
+        ctx.fillText('Image Compressor by Aayant', 110, 455);
+        ctx.font = '28px sans-serif';
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillText('Sample Photo • Test Target KB, Quality, Resize & ZIP Export', 110, 515);
+
+        const pngBlob = await canvasToBlobAsync(sampleCanvas, 'image/png', 1);
+        if (!pngBlob) throw new Error('Failed to create sample image blob');
+
+        const sampleFile = new File([pngBlob], 'sample-photo.png', { type: 'image/png' });
+        await handleIncomingFiles([sampleFile]);
+      } catch (err) {
+        statusMsg.textContent = 'Could not create sample image: ' + (err.message || 'Unknown error');
+      }
+    });
+
+    // Drag-and-drop file support
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-cyan-500');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-cyan-500');
+    });
+
+    dropZone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-cyan-500');
+      const dropped = Array.from(e.dataTransfer?.files || []).filter((f) =>
+        f.type && f.type.startsWith('image/')
+      );
+      if (dropped.length) {
+        await handleIncomingFiles(dropped);
+      } else {
+        statusMsg.textContent = 'Please drop valid image files (JPG, PNG, WebP).';
+      }
+    });
+
+    // File input selection event
+    fileInput.addEventListener('change', async (e) => {
+      const selected = Array.from(e.target.files || []);
+      await handleIncomingFiles(selected);
+      fileInput.value = '';
+    });
+
+    /**
+     * Processes one or more incoming image files and updates the UI list.
+     */
+    async function handleIncomingFiles(selected) {
+      if (!selected.length) {
+        statusMsg.textContent = 'No image selected.';
+        return;
+      }
+
+      statusMsg.textContent = `Processing ${selected.length} image(s)...`;
+      controlsPanel.classList.remove('hidden');
+
+      let failedCount = 0;
+      for (const file of selected) {
+        try {
+          const processed = await processSingleFile(file);
+          filesData.push(processed);
+        } catch (_) {
+          failedCount += 1;
+        }
+      }
+
+      renderList();
+      if (failedCount > 0 && filesData.length === 0) {
+        statusMsg.textContent = 'Could not decode the selected image format in browser. Try a JPG or PNG file.';
+      } else if (failedCount > 0) {
+        statusMsg.textContent = `${failedCount} image(s) could not be processed; remaining images are ready.`;
+      } else {
+        statusMsg.textContent = '';
+      }
+    }
+
+    /**
+     * Re-processes existing images whenever target KB, quality, format, or max width changes.
+     */
+    async function reprocessExisting() {
+      qualityVal.textContent = `${qualitySlider.value}%`;
+      if (!filesData.length || isReprocessing) return;
+
+      isReprocessing = true;
+      try {
+        const rawFiles = filesData.map((item) => item.file);
+        revokeExistingUrls();
+        const updated = [];
+        for (const file of rawFiles) {
+          try {
+            updated.push(await processSingleFile(file));
+          } catch (_) {
+            // Skip individual image failure during re-run
+          }
+        }
+        filesData = updated;
+        renderList();
+      } finally {
+        isReprocessing = false;
+      }
+    }
+
+    // Attach listeners to control inputs
+    [qualitySlider, formatSelect, resizeSelect, targetKbInput].forEach((el) => {
+      el.addEventListener('input', reprocessExisting);
+    });
+
+    // Quick target KB preset buttons
+    presetBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        targetKbInput.value = btn.getAttribute('data-kb') || '';
+        reprocessExisting();
+      });
+    });
+
+    // Clear all files and reset UI
+    clearBtn.addEventListener('click', () => {
+      revokeExistingUrls();
+      filesData = [];
+      imageList.innerHTML = '';
+      statusMsg.textContent = '';
+      controlsPanel.classList.add('hidden');
+    });
+
+    /**
+     * Reads a File into a base64 Data URL.
+     */
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('File read error'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /**
+     * Loads an image source into an HTMLImageElement.
+     */
+    function loadImageAsync(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Image decode error'));
+        img.src = src;
+      });
+    }
+
+    /**
+     * Converts a canvas into a Blob asynchronously.
+     */
+    function canvasToBlobAsync(canvas, type, quality) {
+      return new Promise((resolve) => {
+        try {
+          canvas.toBlob((blob) => resolve(blob), type, quality);
+        } catch (_) {
+          resolve(null);
+        }
+      });
+    }
+
+    /**
+     * Compresses a single file either by the quality slider or via binary search
+     * (plus progressive downscaling fallback) to hit the requested Target KB.
+     */
+    async function processSingleFile(file) {
+      const dataUrl = await readFileAsDataUrl(file);
+      const img = await loadImageAsync(dataUrl);
+
+      const outType = formatSelect.value || 'image/jpeg';
+      const parsedKb = parseFloat(targetKbInput.value);
+      const hasTargetKb = !Number.isNaN(parsedKb) && parsedKb > 0;
+      const targetBytes = hasTargetKb ? parsedKb * 1024 : null;
+
+      const maxWidth = parseInt(resizeSelect.value, 10) || 0;
+      let baseW = img.naturalWidth || img.width || 1;
+      let baseH = img.naturalHeight || img.height || 1;
+
+      if (maxWidth > 0 && baseW > maxWidth) {
+        baseH = Math.round((baseH * maxWidth) / baseW);
+        baseW = maxWidth;
+      }
+
+      const drawScaled = (w, h) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(w));
+        canvas.height = Math
